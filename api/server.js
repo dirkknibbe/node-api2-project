@@ -4,9 +4,9 @@ const express = require("express");
 
 const server = express();
 
-server.use(express.json());
-
 const postsRouter = require("./posts/posts-router");
+
+server.use(express.json());
 
 server.use("/api/posts", postsRouter);
 

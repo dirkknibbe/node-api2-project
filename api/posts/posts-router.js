@@ -35,20 +35,109 @@ router.get("/:id", (req, res) => {
     });
 });
 router.post("/", (req, res) => {
-  if (!req.body.title || !req.body.contents) {
+  const { title, contents } = req.body;
+  if (!title || !contents) {
     res
       .status(400)
       .json({ message: "Please provide title and contents for the post" });
-    return;
+  } else {
+    Posts.insert({ title, contents })
+      .then(({ id }) => {
+        return Posts.findById(id);
+      })
+      .then((post) => {
+        res.status(201).json(post);
+      })
+      .catch((error) => {
+        console.log(error);
+        res.status(500).json({
+          message: "There was an error while saving the post to the database",
+        });
+      });
   }
-  Posts.insert(req.body)
-    .then((newPost) => {
-      res.status(201).json(newPost);
+});
+
+router.delete("/:id", (req, res) => {
+  Posts.findById(req.params.id)
+    .then((obj) => {
+      if (obj == null) {
+        res
+          .status(404)
+          .json({ message: "The post with the specified ID does not exist" });
+      } else {
+        Posts.remove(req.params.id).then(() => {
+          res.status(200).json(obj);
+        });
+      }
     })
     .catch((error) => {
       console.log(error);
       res.status(500).json({
-        message: "There was an error while saving the post to the database",
+        message: "The post could not be removed",
+      });
+    });
+});
+
+// Posts.findById(req.params.id)
+//     .then((obj) => {
+//       if (obj == null) {
+//         res
+//           .status(404)
+//           .json({ message: "The post with the specified ID does not exist" });
+//       } else {
+//         Posts.remove(req.params.id).then(() => {
+//           res.status(200).json(obj);
+//         });
+//       }
+//     })
+
+router.put("/:id", (req, res) => {
+  if (!req.body.title || !req.body.contents) {
+    res
+      .status(400)
+      .json({ message: "Please provide title and contents for the post" });
+  } else {
+    Posts.findById(req.params.id)
+      .then((obj) => {
+        if (obj == null) {
+          res
+            .status(404)
+            .json({ message: "The post with the specified ID does not exist" });
+        } else {
+          return Posts.update(req.params.id, req.body);
+        }
+      })
+      .then((data) => {
+        if (data) {
+          return Posts.findById(req.params.id).then((post) => {
+            res.status(200).json(post);
+          });
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+        res.status(500).json({
+          message: "The post information could not be modified",
+        });
+      });
+  }
+});
+
+router.get("/:id/comments", (req, res) => {
+  Posts.findPostComments(req.params.id)
+    .then((comment) => {
+      if (comment.length > 0) {
+        res.status(200).json(comment);
+      } else {
+        res
+          .status(404)
+          .json({ message: "The post with the specified ID does not exist" });
+      }
+    })
+    .catch((error) => {
+      console.log(error);
+      res.status(500).json({
+        message: "The comments information could not be retrieved",
       });
     });
 });
